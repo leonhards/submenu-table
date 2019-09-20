@@ -166,7 +166,8 @@ class Class_SubMenuTable_Loader {
 
         $admin_url = get_admin_url( get_current_blog_id(), 'admin.php' );
         $url = add_query_arg( array( 'page' => $this->_args['page'], 'action' => $action, 'id' => $id ), $admin_url );
-		return $url;
+        
+        return $url;
     }
 
     /**

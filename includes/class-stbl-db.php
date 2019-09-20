@@ -8,24 +8,24 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Class_SubMenuTable_DB {
 	public function __construct( $action = '' ) {
-        switch ( $action ) {
+		switch ( $action ) {
 			case '':
 				self::_list();
 				break;
 			case 'new':
 			case is_numeric( $action ): // If $action = ID is sent, the load data based on the ID
-                self::get_data();
-                break;
-            case 'create':
-                self::create();
-                break;
-            case 'update':
-                self::update();
-                break;
-            case 'delete':
-                self::delete();
-                break;
-        }
+				self::get_data();
+				break;
+			case 'create':
+				self::create();
+				break;
+			case 'update':
+				self::update();
+				break;
+			case 'delete':
+				self::delete();
+				break;
+		}
 	}
 
 	public function _list() {
