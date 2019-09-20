@@ -8,12 +8,25 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Class_SubMenuTable_Page {
 
-    public $post_type;
+    public $db_version;
     public $text_domain;
+    public $post_type;
+
+    public $table_vehicle_make;
+    public $table_vehicle_model;
+
+    public $table_gold_vendor;
+    public $table_gold_vendor_data;
 
     public function __construct() {
-        $this->post_type = STBL_POST_TYPE;
-        $this->text_domain = STBL_TEXT_DOMAIN;
+        $this->text_domain = 'submenutable';
+        $this->post_type = 'vehicledt';
+
+        $this->table_vehicle_make = 'vehicle_make';
+        $this->table_vehicle_model = 'vehicle_model';
+
+        $this->table_gold_vendor = 'gold_vendor';
+        $this->table_gold_vendor_data = 'gold_vendor_data';
 
         // Use 'load_plugin_textdomain' for setting up plugin's text domain
         load_plugin_textdomain( $this->text_domain, false, STBL__PLUGIN_DIR . 'languages/' );
@@ -33,7 +46,7 @@ class Class_SubMenuTable_Page {
         global $current_screen;
 
         // If this is admin and post_type = '{$this->post_type}'
-        if( is_admin() && is_object( $current_screen ) && $this->post_type == $current_screen->post_type )
+        if( is_admin() && is_object( $current_screen ) && $current_screen->base == $this->post_type.'_page_'.$_GET['page'] )
         {
             wp_enqueue_style( 'stbl-dt-style', STBL__PLUGIN_URL . 'assets/css/jquery.dataTables.min.css', '', '' );
             wp_enqueue_style( 'stbl-style', STBL__PLUGIN_URL . 'assets/css/style.css', '', '' );
@@ -56,7 +69,7 @@ class Class_SubMenuTable_Page {
             __( 'Make / Brand', $this->text_domain ),
             __( 'Make / Brand', $this->text_domain ),
             'manage_options',
-            STBL_VEHICLE_MAKE_TABLE,
+            $this->table_vehicle_make,
             array( $this, 'custom_table_view' )
         );
 
@@ -65,7 +78,25 @@ class Class_SubMenuTable_Page {
             __( 'Model', $this->text_domain ),
             __( 'Model', $this->text_domain ),
             'manage_options',
-            STBL_VEHICLE_MODEL_TABLE,
+            $this->table_vehicle_model,
+            array( $this, 'custom_table_view' )
+        );
+
+        add_submenu_page(
+            'edit.php?post_type=' . $this->post_type,
+            __( 'Gold Vendor', $this->text_domain ),
+            __( 'Gold Vendor', $this->text_domain ),
+            'manage_options',
+            $this->table_gold_vendor,
+            array( $this, 'custom_table_view' )
+        );
+
+        add_submenu_page(
+            'edit.php?post_type=' . $this->post_type,
+            __( 'Gold Vendor Data', $this->text_domain ),
+            __( 'Gold Vendor Data', $this->text_domain ),
+            'manage_options',
+            $this->table_gold_vendor_data,
             array( $this, 'custom_table_view' )
         );
     }

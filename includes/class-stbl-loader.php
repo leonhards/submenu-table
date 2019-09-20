@@ -25,8 +25,11 @@ class Class_SubMenuTable_Loader {
         );
 
         // Define columns to modify from the table
-        $this->column['vehicle_make'] = array( 'make'=>'text', 'country'=>'text', 'description'=>'text' );
-        $this->column['vehicle_model'] = array( 'model'=>'text', 'vehicle_id'=>self::table_lookup('vehicle_make', 'make'), 'model'=> 'text', 'description'=>'text' );
+        $this->columnDef['vehicle_make'] = array( 'make'=>'text', 'country'=>'text', 'description'=>'text' );
+        $this->columnDef['vehicle_model'] = array( 'model'=>'text', 'vehicle_id'=>self::table_lookup('vehicle_make', 'make'), 'model'=> 'text', 'description'=>'text' );
+
+        $this->columnDef['gold_vendor'] = array( 'name'=>'text', 'color'=>'text', 'image_url'=>'text' );
+        $this->columnDef['gold_vendor_data'] = array( 'vendor_id'=>self::table_lookup('gold_vendor', 'name'), 'buy_price'=>'text', 'sell_price'=>'text', 'date'=>'date');
 
         // Declare public variable
         $this->_args = $args;
@@ -200,7 +203,7 @@ class Class_SubMenuTable_Loader {
                     <tr>
                         <th>No</th>
                         <?php
-                        foreach( $this->column[$this->_args['page']] as $col => $type ) :
+                        foreach( $this->columnDef[$this->_args['page']] as $col => $type ) :
                             echo '<th>'. ucfirst( $col ) .'</th>';
                         endforeach;
                         ?>
@@ -211,7 +214,7 @@ class Class_SubMenuTable_Loader {
                 <?php foreach( $list as $key => $value ) : ?>
                     <tr>
                         <td></td>
-                        <?php foreach( $this->column[$this->_args['page']] as $col => $type ) : ?>
+                        <?php foreach( $this->columnDef[$this->_args['page']] as $col => $type ) : ?>
                             <td><?php echo $value->{$col}; ?></td>
                         <?php endforeach; ?>
                         <td>
@@ -228,7 +231,7 @@ class Class_SubMenuTable_Loader {
                 <tfoot>
                     <tr>
                         <th>No</th>
-                        <?php foreach( $this->column[$this->_args['page']] as $col => $type ) :
+                        <?php foreach( $this->columnDef[$this->_args['page']] as $col => $type ) :
                             echo '<th>'. ucfirst( $col ) .'</th>';
                         endforeach; ?>
                         <th></th>
@@ -263,7 +266,7 @@ class Class_SubMenuTable_Loader {
             <form method="post" action="<?php echo esc_url( self::get_admin_url( $this->_args['action'] ).$id ); ?>">
                 <table class="form-table">
                     <tbody>
-                        <?php foreach( $this->column[$this->_args['page']] as $column => $type ) : ?>
+                        <?php foreach( $this->columnDef[$this->_args['page']] as $column => $type ) : ?>
                             <?php $value = ( ! $data->new ) ? $data->{$column} : ''; ?>
                             <tr>
                                 <th scope="row"><?php echo ucfirst( $column ); ?></th>
@@ -275,7 +278,7 @@ class Class_SubMenuTable_Loader {
 
                 <input type="hidden" name="id" value="<?php echo $this->_args['id']; ?>" />
                 <input type="hidden" name="save_form" value="<?php echo $this->_args['action']; ?>" />
-                <input type="hidden" name="columns" value="<?php echo implode(',', array_keys($this->column[$this->_args['page']]) ); ?>" />
+                <input type="hidden" name="columns" value="<?php echo implode(',', array_keys($this->columnDef[$this->_args['page']]) ); ?>" />
 
                 <div>
                     <p>
@@ -298,12 +301,19 @@ class Class_SubMenuTable_Loader {
             case 'text':
                 $element = '<input name="'. $columnName .'" type="text" class="regular-text" autocomplete="off" value="'. $value .'" />';
                 break;
-            case 'select':
+            case 'select_lookup':
                 $option = '';
                 foreach( $this->lookup as $key => $value ) {
-                    $option .= '<option value='. $value->id .'>'. $value->make .'</option>';
+                    $option .= '<option value='. $value->id .'>'. $value->{$this->columnLookup} .'</option>';
                 }
                 $element = '<select name="'. $columnName .'">'. $option .'</select>';
+                break;
+            case 'date':
+                $element = 
+                    '<select id="calendarDay"></select>' .
+                    '<select id="calendarMonth"></select>' .
+                    '<select id="calendarYear"></select>' .
+                    '<input type="hidden" class="hidden form-control calendarInput" name="'. $columnName .'" id="'. $columnName .'" value="'. $value .'">';
                 break;
         }
 
@@ -315,7 +325,8 @@ class Class_SubMenuTable_Loader {
         $table = $wpdb->prefix . $table;
 
         $this->lookup = $wpdb->get_results( "SELECT id, {$column} FROM {$table}" );
+        $this->columnLookup = $column;
 
-        return 'select';
+        return 'select_lookup';
     }
 }
