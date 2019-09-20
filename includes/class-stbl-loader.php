@@ -152,7 +152,7 @@ class Class_SubMenuTable_Loader {
     /**
      * Customize admin_url path with args
      */
-	public function get_admin_url( $action = '', $id = '', $notice = '' ) {
+    public function get_admin_url( $action = '', $id = '', $notice = '' ) {
 
         if( $notice === '' ) {
             $notice = get_option('submenu_table_admin_notice');
@@ -161,12 +161,12 @@ class Class_SubMenuTable_Loader {
             self::set_notice($notice);
         }
 
-		$action = ( $action != '' ) ? $action : null;
-		$id = ( $id != '' ) ? $id : null;
+        $action = ( $action != '' ) ? $action : null;
+        $id = ( $id != '' ) ? $id : null;
 
         $admin_url = get_admin_url( get_current_blog_id(), 'admin.php' );
         $url = add_query_arg( array( 'page' => $this->_args['page'], 'action' => $action, 'id' => $id ), $admin_url );
-        
+
         return $url;
     }
 
