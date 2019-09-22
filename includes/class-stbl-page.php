@@ -19,6 +19,7 @@ class Class_SubMenuTable_Page {
     public $table_gold_vendor_data;
 
     public function __construct() {
+        
         $this->text_domain = 'submenutable';
         $this->post_type = 'vehicledt';
 
@@ -46,7 +47,7 @@ class Class_SubMenuTable_Page {
         global $current_screen;
 
         // If this is admin and post_type = '{$this->post_type}'
-        if( is_admin() && is_object( $current_screen ) && $current_screen->base == $this->post_type.'_page_'.$_GET['page'] )
+        if( is_admin() && is_object( $current_screen ) && isset( $_GET['page'] ) && $current_screen->base == $this->post_type.'_page_'.$_GET['page'] )
         {
             wp_enqueue_style( 'stbl-dt-style', STBL__PLUGIN_URL . 'assets/css/jquery.dataTables.min.css', '', '' );
             wp_enqueue_style( 'stbl-style', STBL__PLUGIN_URL . 'assets/css/style.css', '', '' );

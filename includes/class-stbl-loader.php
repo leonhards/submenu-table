@@ -24,12 +24,28 @@ class Class_SubMenuTable_Loader {
                 )
         );
 
-        // Define columns to modify from the table
-        $this->columnDef['vehicle_make'] = array( 'make'=>'text', 'country'=>'text', 'description'=>'text' );
-        $this->columnDef['vehicle_model'] = array( 'model'=>'text', 'vehicle_id'=>self::table_lookup('vehicle_make', 'make'), 'model'=> 'text', 'description'=>'text' );
-
-        $this->columnDef['gold_vendor'] = array( 'name'=>'text', 'color'=>'text', 'image_url'=>'text' );
-        $this->columnDef['gold_vendor_data'] = array( 'vendor_id'=>self::table_lookup('gold_vendor', 'name'), 'buy_price'=>'text', 'sell_price'=>'text', 'date'=>'date');
+        /**
+         * Define columns to display and modify and what table to join.
+         * 
+         * @param $this->columnDef :: Define columns to modify on 'new' or 'edit' page.
+         * @param $this->columnJoin :: Define column to join from '$this->columnDef' and display on index page (list)
+         */
+        switch( $args['page'] ) {
+            case 'vehicle_make':
+                $this->columnDef['vehicle_make'] = array( 'make' => 'text', 'country' => 'text', 'description' => 'text' );
+                break;
+            case 'vehicle_model':
+                $this->columnDef['vehicle_model'] = array( 'vehicle_id' => self::table_lookup( 'vehicle_make', 'make' ), 'model'=> 'text', 'description' => 'text' );
+                $this->columnJoin['vehicle_model'] = array( 'vehicle_id' => array( 'vehicle_make', 'make' ) );
+                break;
+            case 'gold_vendor':
+                $this->columnDef['gold_vendor'] = array( 'vendor' => 'text', 'color' => 'text', 'image_url' => 'text' );
+                break;
+            case 'gold_vendor_data':
+                $this->columnDef['gold_vendor_data'] = array( 'vendor_id' => self::table_lookup('gold_vendor', 'vendor'), 'buy_price' => 'text', 'sell_price' => 'text', 'date' => 'date');
+                $this->columnJoin['gold_vendor_data'] = array( 'vendor_id' => array( 'gold_vendor', 'vendor' ) );
+                break;
+        }
 
         // Declare public variable
         $this->_args = $args;
@@ -72,7 +88,7 @@ class Class_SubMenuTable_Loader {
                 break;
             case '3':
                 $class = 'error';
-                $message = __('Error! Data yang Anda input salah. '. get_option('submenu_table_error_msg'), $this->_args['post_type']);
+                $message = __('Error! Data yang Anda input sudah ada atau mungkin tidak valid. '. get_option('submenu_table_error_msg'), $this->_args['post_type']);
                 break;
         }
 
@@ -110,16 +126,18 @@ class Class_SubMenuTable_Loader {
                 if( isset( $_POST['save_form'] ) ) {
                     $qry = new Class_SubMenuTable_DB( 'create' );
                     if( $qry->saved ) {
-                        self::set_notice(1);
-                        wp_safe_redirect( esc_url_raw( self::get_admin_url( 'edit', $qry->insert_id ) ) );
+                        wp_safe_redirect( esc_url_raw( self::get_admin_url( 'edit', $qry->insert_id, true ) ) );
                         exit();
                     } else {
-                        self::set_notice(3);
                         self::set_error_msg( $qry->error );
-                        wp_safe_redirect( esc_url_raw( self::get_admin_url( 'new' ) ) );
+                        wp_safe_redirect( esc_url_raw( self::get_admin_url( 'new', 'error' ) ) );
                         exit();
                     }
                 } else {
+                    if( $this->_args['id'] == 'error' )
+                        self::set_notice(3);
+                    else
+                        self::set_notice(0);
                     self::load_form();
                 }
                 break;
@@ -136,6 +154,10 @@ class Class_SubMenuTable_Loader {
                         self::load_form();
                     }
                 } else {
+                    if( isset( $_GET['redirect'] ) )
+                        self::set_notice(1);
+                    else
+                        self::set_notice(0);
                     self::load_form();
                 }
                 break;
@@ -143,6 +165,7 @@ class Class_SubMenuTable_Loader {
             case 'delete':
                 $qry = new Class_SubMenuTable_DB( 'delete' );
                 if( $qry->deleted ) {
+                    self::set_notice(2);
                     self::load_view();
                 }
                 break;
@@ -151,21 +174,19 @@ class Class_SubMenuTable_Loader {
 
     /**
      * Customize admin_url path with args
+     * 
+     * @param $action :: get action from URL
+     * @param $id :: get id from URL
+     * @param $redirect :: if it is redirection set value to 'true'. Default: 'false'.
      */
-    public function get_admin_url( $action = '', $id = '', $notice = '' ) {
-
-        if( $notice === '' ) {
-            $notice = get_option('submenu_table_admin_notice');
-            self::set_notice($notice);
-        } else {
-            self::set_notice($notice);
-        }
+    public function get_admin_url( $action = '', $id = '', $redirect = false ) {
 
         $action = ( $action != '' ) ? $action : null;
         $id = ( $id != '' ) ? $id : null;
+        $redirect = ( $redirect ) ? 'true' : null;
 
         $admin_url = get_admin_url( get_current_blog_id(), 'admin.php' );
-        $url = add_query_arg( array( 'page' => $this->_args['page'], 'action' => $action, 'id' => $id ), $admin_url );
+        $url = add_query_arg( array( 'page' => $this->_args['page'], 'action' => $action, 'id' => $id, 'redirect' => $redirect ), $admin_url );
 
         return $url;
     }
@@ -186,6 +207,7 @@ class Class_SubMenuTable_Loader {
      * Load view for index table page
      */
     protected function load_view() {
+        global $wpdb;
 
         // Load all data
         $load = new Class_SubMenuTable_DB();
@@ -193,7 +215,7 @@ class Class_SubMenuTable_Loader {
 
         ?>
         <div class="wrap">
-            <h2 class="left"><?php echo ucwords( str_replace( '_', ' ', $this->_args['page'] ) ); ?> <a class="page-title-action" href="<?php echo esc_url( self::get_admin_url( 'new', '', '0' ) ); ?>">+ <?php _e( 'Add New', $this->_args['text_domain'] ); ?></a></h2>
+            <h2 class="left"><?php echo ucwords( str_replace( '_', ' ', $this->_args['page'] ) ); ?> <a class="page-title-action" href="<?php echo esc_url( self::get_admin_url( 'new' ) ); ?>">+ <?php _e( 'Add New', $this->_args['text_domain'] ); ?></a></h2>
             <div class="clear"></div>
             <hr />
 
@@ -205,7 +227,12 @@ class Class_SubMenuTable_Loader {
                         <th>No</th>
                         <?php
                         foreach( $this->columnDef[$this->_args['page']] as $col => $type ) :
-                            echo '<th>'. ucfirst( $col ) .'</th>';
+                            if( $type == 'select_lookup' ) {
+                                $column_name = $this->columnJoin[$this->_args['page']][$col][1];
+                            } else {
+                                $column_name = $col;
+                            }
+                            echo '<th>'. ucwords( str_replace( '_', ' ', $column_name ) ) .'</th>';
                         endforeach;
                         ?>
                         <th></th>
@@ -216,10 +243,19 @@ class Class_SubMenuTable_Loader {
                     <tr>
                         <td></td>
                         <?php foreach( $this->columnDef[$this->_args['page']] as $col => $type ) : ?>
-                            <td><?php echo $value->{$col}; ?></td>
+                            <?php
+                            if( $type == 'select_lookup' ) {
+                                $table_lookup = $wpdb->prefix . $this->columnJoin[$this->_args['page']][$col][0];
+                                $column_lookup = $this->columnJoin[$this->_args['page']][$col][1];
+                                $row_data =$wpdb->get_var( $wpdb->prepare( "SELECT {$column_lookup} from {$table_lookup} where id = %d", $value->{$col} ) );
+                            } else {
+                                $row_data = $value->{$col};
+                            }
+                            ?>
+                            <td><?php echo $row_data; ?></td>
                         <?php endforeach; ?>
                         <td>
-                            <a href="<?php echo esc_url( self::get_admin_url( 'edit', $value->id, '0' ) ); ?>" title="Edit">
+                            <a href="<?php echo esc_url( self::get_admin_url( 'edit', $value->id ) ); ?>" title="Edit">
                                 <span class="dashicons dashicons-edit"></span>Edit
                             </a>&nbsp;
                             <a href="<?php echo esc_url( wp_nonce_url( self::get_custom_page_admin_url( 'delete', $value->id ), 'nonce_delete_data' ) ); ?>" style="color: #ED4337;" title="Edit" onclick="return confirm('Anda yakin ingin menghapus data ini?')">
@@ -232,9 +268,16 @@ class Class_SubMenuTable_Loader {
                 <tfoot>
                     <tr>
                         <th>No</th>
-                        <?php foreach( $this->columnDef[$this->_args['page']] as $col => $type ) :
-                            echo '<th>'. ucfirst( $col ) .'</th>';
-                        endforeach; ?>
+                        <?php
+                        foreach( $this->columnDef[$this->_args['page']] as $col => $type ) :
+                            if( $type == 'select_lookup' ) {
+                                $column_name = $this->columnJoin[$this->_args['page']][$col][1];
+                            } else {
+                                $column_name = $col;
+                            }
+                            echo '<th>'. ucwords( str_replace( '_', ' ', $column_name ) ) .'</th>';
+                        endforeach;
+                        ?>
                         <th></th>
                     </tr>
                 </tfoot>
@@ -248,8 +291,6 @@ class Class_SubMenuTable_Loader {
      * For the form submit URL (new), add 'noheader=true' to prevent 'headers already sent...' error
      */
     protected function load_form() {
-        global $wpdb;
-
         // No need to send header when $action = 'new'
         $id = ( $this->_args['action'] == 'new' ) ? '&noheader=true' : '&id='.$this->_args['id'];
 
@@ -258,7 +299,11 @@ class Class_SubMenuTable_Loader {
 
         ?>
         <div class="wrap">
-            <h2 class="left"><?php echo ucwords( str_replace( '_', ' ', $this->_args['page'] ) ); ?></h2>
+            <h2 class="left"><?php echo ucwords( str_replace( '_', ' ', $this->_args['page'] ) ); ?>
+                <?php if( $this->_args['action'] == 'edit' ) : ?>
+                    <a class="page-title-action" href="<?php echo esc_url( self::get_admin_url( 'new' ) ); ?>">+ <?php _e( 'Add New', $this->_args['text_domain'] ); ?></a>
+                <?php endif; ?>
+            </h2>
             <div class="clear"></div>
             <hr />
 
@@ -267,11 +312,18 @@ class Class_SubMenuTable_Loader {
             <form method="post" action="<?php echo esc_url( self::get_admin_url( $this->_args['action'] ).$id ); ?>">
                 <table class="form-table">
                     <tbody>
-                        <?php foreach( $this->columnDef[$this->_args['page']] as $column => $type ) : ?>
-                            <?php $value = ( ! $data->new ) ? $data->{$column} : ''; ?>
+                        <?php foreach( $this->columnDef[$this->_args['page']] as $col => $type ) : ?>
+                            <?php $value = ( ! $data->new ) ? $data->{$col} : ''; ?>
                             <tr>
-                                <th scope="row"><?php echo ucfirst( $column ); ?></th>
-                                <td><?php echo self::get_element( $type, $column, $value ); ?></td>
+                                <?php
+                                if( $type == 'select_lookup' ) {
+                                    $column_name = $this->columnJoin[$this->_args['page']][$col][1];
+                                } else {
+                                    $column_name = $col;
+                                }
+                                echo '<th scope="row">'. ucwords( str_replace( '_', ' ', $column_name ) ) .'</th>';
+                                ?>
+                                <td><?php echo self::get_element( $type, $col, $value ); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -304,8 +356,11 @@ class Class_SubMenuTable_Loader {
                 break;
             case 'select_lookup':
                 $option = '';
-                foreach( $this->lookup as $key => $value ) {
-                    $option .= '<option value='. $value->id .'>'. $value->{$this->columnLookup} .'</option>';
+                foreach( $this->lookup as $key => $data ) {
+                    if( $data->id == $value )
+                        $option .= '<option value='. $data->id .' selected>'. $data->{$this->columnLookup} .'</option>';
+                    else
+                        $option .= '<option value='. $data->id .'>'. $data->{$this->columnLookup} .'</option>';
                 }
                 $element = '<select name="'. $columnName .'">'. $option .'</select>';
                 break;
