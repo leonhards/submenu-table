@@ -1,4 +1,4 @@
-# SubMenu Table
+# Vehicle Registration Plugin for WordPress
 
 ![WordPress](https://img.shields.io/badge/WordPress-Plugin%20Ready-blue?logo=wordpress)
 ![GPLv2](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)
