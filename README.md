@@ -53,17 +53,13 @@ Designed as:
 ### 1. Clone the Repository
 
 ```bash
-mkdir wordpress-plugin && cd wordpress-plugin
+cd wp-content/plugins
 git clone https://github.com/leonhards/submenu-table.git
 ```
 
 ### 2. Install the Plugin
 
-Move the plugin to your WordPress plugins directory (replace with your actual path):
-
-```bash
-mv submenu-table ./wp-content/plugins/
-```
+Ensure the plugin is located in your WordPress plugins directory.
 
 ### 3. Activate the Plugin
 
